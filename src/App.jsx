@@ -1,29 +1,36 @@
-import useAuth from './hooks/useAuth';
-import AuthScreen from './components/AuthScreen';
-import MainApp from './components/MainApp';
-import Spinner from './components/common/Spinner';
+import React, { lazy, Suspense } from 'react'; // Import lazy and Suspense
+import useAuth from './hooks/useAuth.js';
+import Spinner from './components/common/Spinner.jsx';
+
+// LAZY LOADING: Dynamically import the MainApp component.
+// The code for MainApp will now be in a separate chunk and only loaded when needed.
+const MainApp = lazy(() => import('./components/MainApp.jsx'));
+const AuthScreen = lazy(() => import('./components/AuthScreen.jsx'));
 
 function App() {
   const { user, isLoading } = useAuth();
 
-  // While the auth state is being checked, show a full-screen spinner
-  // This prevents a flash of the login screen before redirecting to the main app
+  // Show a spinner while the initial authentication check is running
   if (isLoading) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-gray-950">
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <Spinner />
       </div>
     );
   }
 
-  // Once loading is complete, render the correct component based on auth state
   return (
-    <>
+    // The Suspense component shows a fallback UI (our spinner) while
+    // the lazy-loaded component's code is being fetched.
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+        <Spinner />
+      </div>
+    }>
       {user ? <MainApp user={user} /> : <AuthScreen />}
-    </>
+    </Suspense>
   );
 }
 
 export default App;
-
 
