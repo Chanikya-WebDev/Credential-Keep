@@ -1,4 +1,8 @@
 Credential Keep: A Secure Credential Management Vault
+<p align="center">
+<img src="https://www.google.com/search?q=https://placehold.co/600x300/111827/7C3AED%3Ftext%3DCredential%2BKeep%26font%3Draleway" alt="Credential Keep Banner"/>
+</p>
+
 Credential Keep is a modern, secure, and fully-featured web application designed to help users manage their website and application credentials. Built with a production-grade technology stack, it offers a seamless and responsive experience for storing, viewing, editing, and searching for sensitive login information. The application is architected with a strong emphasis on security, ensuring that each user's data is completely isolated and accessible only to them.
 
 Table of Contents
@@ -40,7 +44,7 @@ Password Management: Users can securely change their linked password.
 
 Forgot Password Flow: A secure email-based password reset functionality is available from the login screen.
 
-** CRUD Functionality:**
+⚙️ CRUD Functionality:
 
 Create: Easily add new credentials, including a website name, username, password, an optional description, and tags.
 
