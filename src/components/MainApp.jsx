@@ -1,99 +1,129 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebaseConfig';
-import { getCredentials, addCredential, deleteCredential } from '../services/firestoreService';
-import CredentialItem from './CredentialItem';
-import Spinner from './common/Spinner';
+import { auth } from '../firebaseConfig.js';
+import { streamCredentials, addCredential, deleteCredential, updateCredential } from '../services/firestoreService.js';
+import CredentialItem from './CredentialItem.jsx';
+import Spinner from './common/Spinner.jsx';
+import EditCredentialModal from './EditCredentialModal.jsx';
+import ConfirmationModal from './ConfirmationModal.jsx';
 
 const MainApp = ({ user }) => {
   const [credentials, setCredentials] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Form state
   const [websiteName, setWebsiteName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [description, setDescription] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Set up real-time listener for credentials
+  // Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [currentCredential, setCurrentCredential] = useState(null);
+
   useEffect(() => {
     if (!user) return;
-    
-    setIsLoading(true);
-    const unsubscribe = getCredentials(user.uid, (creds) => {
+    const unsubscribe = streamCredentials(user.uid, (creds) => {
       setCredentials(creds);
       setIsLoading(false);
     });
-
-    // Cleanup listener on component unmount
     return () => unsubscribe();
   }, [user]);
 
   const handleAddCredential = async (e) => {
     e.preventDefault();
     if (!websiteName || !username || !password) return;
-    try {
-      await addCredential(user.uid, { websiteName, username, password });
-      setWebsiteName('');
-      setUsername('');
-      setPassword('');
-    } catch (error) {
-      console.error("Error adding document: ", error);
-      alert("Failed to add credential.");
-    }
+    await addCredential(user.uid, { websiteName, username, password, description });
+    setWebsiteName('');
+    setUsername('');
+    setPassword('');
+    setDescription('');
+  };
+
+  const handleOpenEditModal = (credential) => {
+    setCurrentCredential(credential);
+    setIsEditModalOpen(true);
   };
   
-  const handleDeleteCredential = async (id) => {
-    if (window.confirm("Are you sure you want to delete this credential?")) {
-        try {
-            await deleteCredential(user.uid, id);
-        } catch (error) {
-            console.error("Error deleting document: ", error);
-            alert("Failed to delete credential.");
-        }
-    }
+  const handleUpdateCredential = async (id, updatedData) => {
+      await updateCredential(user.uid, id, updatedData);
+      setIsEditModalOpen(false);
   };
-  
-  // useMemo will only re-calculate the filtered list when credentials or searchTerm change.
-  const filteredCredentials = useMemo(() => 
-    credentials.filter(cred => cred.websiteName.toLowerCase().includes(searchTerm.toLowerCase())),
-    [credentials, searchTerm]
+
+  const handleOpenDeleteModal = (id) => {
+    setCurrentCredential({ id });
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (currentCredential) {
+      await deleteCredential(user.uid, currentCredential.id);
+    }
+    setIsDeleteModalOpen(false);
+    setCurrentCredential(null); // Clear credential after deletion
+  };
+
+  const filteredCredentials = credentials.filter(cred =>
+    (cred.websiteName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="w-full h-screen p-4 bg-gray-950">
-        <div className="w-full max-w-6xl mx-auto bg-gray-900 rounded-2xl shadow-2xl flex flex-col h-full border border-gray-700">
-            <header className="p-4 sm:p-6 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
-                <div>
-                    <h1 className="text-2xl font-bold text-white">Credential Keep</h1>
-                    <p className="text-gray-400 text-sm truncate" title={user.email}>{user.email || 'Signed In'}</p>
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <header className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+          <h1 className="text-3xl font-bold">Credential Keep</h1>
+          <button onClick={() => signOut(auth)} className="bg-indigo-600 px-4 py-2 rounded-md font-semibold hover:bg-indigo-700 transition">
+            Sign Out
+          </button>
+        </header>
+
+        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Add Credential</h2>
+              <form onSubmit={handleAddCredential}>
+                <input value={websiteName} onChange={e => setWebsiteName(e.target.value)} type="text" placeholder="Website Name" required className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="Username/Email" required className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" required className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" rows="3" className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                <button type="submit" className="w-full bg-indigo-600 py-2.5 rounded-md font-semibold hover:bg-indigo-700 transition">
+                  Add Credential
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
+              <h2 className="text-2xl font-bold mb-4">Your Credentials</h2>
+              <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search by website..." className="w-full p-2 mb-6 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40"><Spinner /></div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredCredentials.length > 0 ? (
+                    filteredCredentials.map(cred => (
+                      <CredentialItem key={cred.id} credential={cred} onDelete={handleOpenDeleteModal} onEdit={handleOpenEditModal} />
+                    ))
+                  ) : (
+                     <p className="text-gray-400 text-center py-4">
+                       {searchTerm ? 'No matches found.' : 'Add your first credential!'}
+                    </p>
+                  )}
                 </div>
-                <button onClick={() => signOut(auth)} className="py-2 px-4 border border-gray-600 rounded-md shadow-sm text-sm font-medium text-white bg-gray-700 hover:bg-gray-600">Log Out</button>
-            </header>
-            <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
-                <div className="w-full md:w-1/3 p-6 border-r border-gray-700 flex-shrink-0 overflow-y-auto">
-                    <h2 className="text-lg font-semibold mb-4 text-white">Add New Credential</h2>
-                    <form onSubmit={handleAddCredential} className="space-y-4">
-                        <input value={websiteName} onChange={e => setWebsiteName(e.target.value)} type="text" placeholder="Website Name" required className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                        <input value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="Email or Username" required className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                        <input value={password} onChange={e => setPassword(e.target.value)} type="password" placeholder="Password" required className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-3 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                        <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">Add Credential</button>
-                    </form>
-                </div>
-                <div className="flex-grow flex flex-col p-6 overflow-hidden">
-                    <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Search by website name..." className="w-full bg-gray-800 border border-gray-600 rounded-md py-2 px-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4 flex-shrink-0" />
-                    <div className="flex-grow overflow-y-auto pr-2">
-                        {isLoading ? (
-                           <div className="h-full flex items-center justify-center"><Spinner /></div>
-                        ) : filteredCredentials.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-center text-gray-500"><svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 11V7a4 4 0 118 0m-4 8v3m-6 4h12a2 2 0 002-2v-3a2 2 0 00-2-2H6a2 2 0 00-2 2v3a2 2 0 002 2z"></path></svg><h3 className="text-lg font-semibold">No Credentials Found</h3><p className="mt-1">{searchTerm ? 'Try a different search term.' : 'Use the form to add one.'}</p></div>
-                        ) : (
-                            filteredCredentials.map(cred => <CredentialItem key={cred.id} cred={cred} onDelete={handleDeleteCredential} />)
-                        )}
-                    </div>
-                </div>
-            </main>
-        </div>
+              )}
+            </div>
+          </div>
+        </main>
+      </div>
+      
+      <EditCredentialModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} credential={currentCredential} onUpdate={handleUpdateCredential} />
+      <ConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleConfirmDelete} title="Confirm Deletion" message="Are you sure you want to permanently delete this credential?" />
     </div>
   );
 };
 
 export default MainApp;
+

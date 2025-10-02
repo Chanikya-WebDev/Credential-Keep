@@ -1,45 +1,30 @@
-import { collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc, query, where } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../firebaseConfig.js';
 
-export const credentialsCollection = (userId) => collection(db, `users/${userId}/credentials`);
-
-export const addCredential = (userId, credential) => {
-  return addDoc(credentialsCollection(userId), credential);
+// Use onSnapshot for real-time updates from the database
+export const streamCredentials = (userId, callback) => {
+  const userCredentialsCol = collection(db, `users/${userId}/credentials`);
+  const q = query(userCredentialsCol); 
+  return onSnapshot(q, (snapshot) => {
+    const credentialsList = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+    callback(credentialsList);
+  });
 };
 
-export const deleteCredential = (userId, id) => {
-  const docRef = doc(db, `users/${userId}/credentials`, id);
+// UPDATED: Now includes the 'description' field in the data object
+export const addCredential = (userId, { websiteName, username, password, description }) => {
+  const userCredentialsCol = collection(db, `users/${userId}/credentials`);
+  return addDoc(userCredentialsCol, { websiteName, username, password, description });
+};
+
+// UPDATED: Can now handle updates to any field, including the new 'description'
+export const updateCredential = (userId, docId, dataToUpdate) => {
+  const docRef = doc(db, `users/${userId}/credentials`, docId);
+  return updateDoc(docRef, dataToUpdate);
+};
+
+export const deleteCredential = (userId, docId) => {
+  const docRef = doc(db, `users/${userId}/credentials`, docId);
   return deleteDoc(docRef);
 };
 
-export const updateCredential = (userId, id, updatedCredential) => {
-  const docRef = doc(db, `users/${userId}/credentials`, id);
-  return updateDoc(docRef, updatedCredential);
-};
-
-export const getCredentials = (userId, callback) => {
-  const q = query(collection(db, `users/${userId}/credentials`));
-  return onSnapshot(q, (querySnapshot) => {
-    const credentials = [];
-    querySnapshot.forEach((doc) => {
-      credentials.push({ id: doc.id, ...doc.data() });
-    });
-    // Sort alphabetically by website name
-    credentials.sort((a, b) => a.website.localeCompare(b.website));
-    callback(credentials);
-  });
-};
-
-export const searchCredentials = (userId, searchTerm, callback) => {
-  const q = query(
-    collection(db, `users/${userId}/credentials`),
-    where("website", "==", searchTerm)
-  );
-  return onSnapshot(q, (querySnapshot) => {
-    const credentials = [];
-    querySnapshot.forEach((doc) => {
-      credentials.push({ id: doc.id, ...doc.data() });
-    });
-    callback(credentials);
-  });
-};
