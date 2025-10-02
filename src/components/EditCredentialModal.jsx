@@ -2,20 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 const EditCredentialModal = ({ isOpen, onClose, credential, onUpdate }) => {
-  // State for each input field in the modal
   const [websiteName, setWebsiteName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [description, setDescription] = useState(''); // NEW state for the description
+  const [description, setDescription] = useState('');
+  const [tags, setTags] = useState(''); // NEW: State for tags as a string
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // This effect populates the form with the data of the credential being edited.
   useEffect(() => {
     if (credential) {
       setWebsiteName(credential.websiteName || '');
       setUsername(credential.username || '');
       setPassword(credential.password || '');
-      setDescription(credential.description || ''); // Populate the description field
+      setDescription(credential.description || '');
+      // NEW: Join the tags array into a comma-separated string for the input field
+      setTags(credential.tags ? credential.tags.join(', ') : '');
     }
   }, [credential]);
 
@@ -23,9 +24,10 @@ const EditCredentialModal = ({ isOpen, onClose, credential, onUpdate }) => {
     e.preventDefault();
     setIsUpdating(true);
     try {
-      // UPDATED: Include the description in the object sent for updating
-      await onUpdate(credential.id, { websiteName, username, password, description });
-      onClose(); // Close the modal on successful update
+      // NEW: Convert the tag string back into an array
+      const tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+      await onUpdate(credential.id, { websiteName, username, password, description, tags: tagsArray });
+      onClose();
     } catch (error) {
       console.error("Failed to update:", error);
       alert("Update failed. Please try again.");
@@ -46,10 +48,10 @@ const EditCredentialModal = ({ isOpen, onClose, credential, onUpdate }) => {
         <form onSubmit={handleUpdate}>
           <input value={websiteName} onChange={e => setWebsiteName(e.target.value)} type="text" placeholder="Website Name" required className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           <input value={username} onChange={e => setUsername(e.target.value)} type="text" placeholder="Username/Email" required className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          {/* Using type="text" for password to allow viewing while editing */}
           <input value={password} onChange={e => setPassword(e.target.value)} type="text" placeholder="Password" required className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          {/* NEW: Textarea for editing the description */}
           <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" rows="3" className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+          {/* NEW: Input for comma-separated tags */}
+          <input value={tags} onChange={e => setTags(e.target.value)} type="text" placeholder="Tags (comma-separated)" className="w-full mb-4 p-2 bg-gray-700 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           <div className="flex justify-end gap-4">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-md font-semibold bg-gray-600 hover:bg-gray-500 transition">Cancel</button>
             <button type="submit" disabled={isUpdating} className="px-4 py-2 rounded-md font-semibold bg-indigo-600 hover:bg-indigo-700 transition disabled:opacity-50">

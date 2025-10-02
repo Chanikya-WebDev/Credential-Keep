@@ -1,7 +1,7 @@
 import { collection, addDoc, onSnapshot, query, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebaseConfig.js';
 
-// Use onSnapshot for real-time updates from the database
+// No changes needed here, it retrieves all fields by default.
 export const streamCredentials = (userId, callback) => {
   const userCredentialsCol = collection(db, `users/${userId}/credentials`);
   const q = query(userCredentialsCol); 
@@ -11,13 +11,13 @@ export const streamCredentials = (userId, callback) => {
   });
 };
 
-// UPDATED: Now includes the 'description' field in the data object
-export const addCredential = (userId, { websiteName, username, password, description }) => {
+// UPDATED: Now includes the 'tags' field
+export const addCredential = (userId, { websiteName, username, password, description, tags }) => {
   const userCredentialsCol = collection(db, `users/${userId}/credentials`);
-  return addDoc(userCredentialsCol, { websiteName, username, password, description });
+  return addDoc(userCredentialsCol, { websiteName, username, password, description, tags });
 };
 
-// UPDATED: Can now handle updates to any field, including the new 'description'
+// UPDATED: Can now update the 'tags' field
 export const updateCredential = (userId, docId, dataToUpdate) => {
   const docRef = doc(db, `users/${userId}/credentials`, docId);
   return updateDoc(docRef, dataToUpdate);

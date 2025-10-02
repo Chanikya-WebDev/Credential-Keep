@@ -8,26 +8,33 @@ const CredentialItem = ({ credential, onDelete, onEdit }) => {
   const copyToClipboard = (text, type) => {
     navigator.clipboard.writeText(text).then(() => {
       setToastMessage(`${type} copied!`);
-      setTimeout(() => setToastMessage(''), 2000); // Hide toast after 2 seconds
+      setTimeout(() => setToastMessage(''), 2000);
     });
   };
 
   return (
     <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600 relative overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
-        <div className="flex-grow min-w-0"> {/* Added min-w-0 for proper text wrapping */}
+        <div className="flex-grow min-w-0">
           <h3 className="font-bold text-lg text-white break-words">{credential.websiteName}</h3>
           <p className="text-sm text-gray-300 break-words">{credential.username}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-sm text-gray-400 font-mono break-all">
-              {isPasswordVisible ? credential.password : '••••••••••••'}
-            </p>
-          </div>
-          {/* UPDATED: Conditionally render the description if it exists */}
+          <p className="text-sm text-gray-400 font-mono break-all mt-1">
+            {isPasswordVisible ? credential.password : '••••••••••••'}
+          </p>
           {credential.description && (
             <p className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-600 break-words whitespace-pre-wrap">
               {credential.description}
             </p>
+          )}
+          {/* NEW: Display tags if they exist */}
+          {credential.tags && credential.tags.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-gray-600 flex flex-wrap gap-2">
+              {credential.tags.map((tag, index) => (
+                <span key={index} className="text-xs bg-indigo-600/50 text-indigo-200 px-2 py-1 rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-center">
@@ -47,4 +54,3 @@ const CredentialItem = ({ credential, onDelete, onEdit }) => {
 };
 
 export default CredentialItem;
-
