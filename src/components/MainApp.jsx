@@ -6,6 +6,7 @@ import CredentialItem from './CredentialItem.jsx';
 import Spinner from './common/Spinner.jsx';
 import EditCredentialModal from './EditCredentialModal.jsx';
 import ConfirmationModal from './ConfirmationModal.jsx';
+import SettingsModal from './SettingsModal.jsx'; // NEW: Import the settings modal
 
 const MainApp = ({ user }) => {
   const [credentials, setCredentials] = useState([]);
@@ -21,6 +22,7 @@ const MainApp = ({ user }) => {
   // Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false); // NEW: State for settings modal
   const [currentCredential, setCurrentCredential] = useState(null);
 
   useEffect(() => {
@@ -62,7 +64,6 @@ const MainApp = ({ user }) => {
       await deleteCredential(user.uid, currentCredential.id);
     }
     setIsDeleteModalOpen(false);
-    setCurrentCredential(null); // Clear credential after deletion
   };
 
   const filteredCredentials = credentials.filter(cred =>
@@ -74,9 +75,15 @@ const MainApp = ({ user }) => {
       <div className="max-w-7xl mx-auto">
         <header className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
           <h1 className="text-3xl font-bold">Credential Keep</h1>
-          <button onClick={() => signOut(auth)} className="bg-indigo-600 px-4 py-2 rounded-md font-semibold hover:bg-indigo-700 transition">
-            Sign Out
-          </button>
+          <div className="flex items-center gap-4">
+            {/* NEW: Button to open the settings modal */}
+            <button onClick={() => setIsSettingsModalOpen(true)} className="bg-gray-600 px-4 py-2 rounded-md font-semibold hover:bg-gray-500 transition">
+                Account Settings
+            </button>
+            <button onClick={() => signOut(auth)} className="bg-indigo-600 px-4 py-2 rounded-md font-semibold hover:bg-indigo-700 transition">
+              Sign Out
+            </button>
+          </div>
         </header>
 
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -119,8 +126,11 @@ const MainApp = ({ user }) => {
         </main>
       </div>
       
+      {/* Render all the modals */}
       <EditCredentialModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} credential={currentCredential} onUpdate={handleUpdateCredential} />
       <ConfirmationModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} onConfirm={handleConfirmDelete} title="Confirm Deletion" message="Are you sure you want to permanently delete this credential?" />
+      {/* NEW: Render the settings modal */}
+      <SettingsModal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} user={user} />
     </div>
   );
 };
