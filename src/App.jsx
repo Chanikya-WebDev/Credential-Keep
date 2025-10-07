@@ -1,6 +1,8 @@
 import React, { lazy, Suspense } from 'react'; // Import lazy and Suspense
 import useAuth from './hooks/useAuth.js';
 import Spinner from './components/common/Spinner.jsx';
+import { HelmetProvider } from 'react-helmet-async';
+import SEO from './components/SEO.jsx';
 
 // LAZY LOADING: Dynamically import the MainApp component.
 // The code for MainApp will now be in a separate chunk and only loaded when needed.
@@ -20,8 +22,14 @@ function App() {
   }
 
   return (
-    // The Suspense component shows a fallback UI (our spinner) while
-    // the lazy-loaded component's code is being fetched.
+    <HelmetProvider>
+      <SEO 
+        title="Credentials Keep - Securely Store Your Credentials"
+        description="A secure and user-friendly app to manage your credentials with ease. Keep safely your credentials without fear of forgetting credentials."
+        name="Credentials Keep"
+        type="website"
+      />
+      
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen bg-gray-900">
         <Spinner />
@@ -29,6 +37,7 @@ function App() {
     }>
       {user ? <MainApp user={user} /> : <AuthScreen />}
     </Suspense>
+    </HelmetProvider>
   );
 }
 
